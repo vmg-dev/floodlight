@@ -213,7 +213,6 @@ final class FloodlightPanelController {
         guard panel.isVisible, event.window === panel || panel.isKeyWindow else {
             return event
         }
-        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
         switch event.keyCode {
         case 125:
@@ -224,10 +223,6 @@ final class FloodlightPanelController {
             return nil
         default:
             break
-        }
-
-        if modifiers.contains(.command), handleCommandKeyEquivalent(event) {
-            return nil
         }
 
         return event
@@ -241,6 +236,11 @@ final class FloodlightPanelController {
         guard modifiers.contains(.command) else { return false }
 
         let characters = event.charactersIgnoringModifiers?.lowercased()
+        let fieldEditor = panel.firstResponder as? NSTextView
+        if Self.performSearchTextEditingCommand(characters, in: fieldEditor) {
+            return true
+        }
+
         if Self.commandDigit(for: characters) != nil {
             if let index = Self.filterShortcutIndex(for: characters) {
                 let options = model.filterOptions
@@ -270,6 +270,48 @@ final class FloodlightPanelController {
             return false
         }
         return true
+    }
+
+    static func performSearchTextEditingCommand(
+        _ characters: String?,
+        in fieldEditor: NSTextView?,
+        pasteboard: NSPasteboard = .general
+    ) -> Bool {
+        guard let fieldEditor, fieldEditor.isFieldEditor else { return false }
+
+        switch characters {
+        case "a":
+            fieldEditor.selectAll(nil)
+        case "c" where fieldEditor.selectedRange().length > 0:
+            writeSelectedText(from: fieldEditor, to: pasteboard)
+        case "v":
+            if let value = pasteboard.string(forType: .string) {
+                fieldEditor.insertText(
+                    value,
+                    replacementRange: fieldEditor.selectedRange()
+                )
+            }
+        case "x":
+            let selection = fieldEditor.selectedRange()
+            if selection.length > 0 {
+                writeSelectedText(from: fieldEditor, to: pasteboard)
+                fieldEditor.insertText("", replacementRange: selection)
+            }
+        default:
+            return false
+        }
+        return true
+    }
+
+    private static func writeSelectedText(
+        from fieldEditor: NSTextView,
+        to pasteboard: NSPasteboard
+    ) {
+        let selection = fieldEditor.selectedRange()
+        guard selection.length > 0 else { return }
+        let value = (fieldEditor.string as NSString).substring(with: selection)
+        pasteboard.clearContents()
+        pasteboard.setString(value, forType: .string)
     }
 
     static func commandDigit(for characters: String?) -> Int? {

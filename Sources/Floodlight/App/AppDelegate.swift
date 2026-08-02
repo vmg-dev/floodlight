@@ -338,6 +338,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// key equivalents below work while the panel is key. Anything a user has
     /// to click belongs in `makeStatusMenu()` instead.
     private func installMenu() {
+        NSApp.mainMenu = makeMainMenu()
+    }
+
+    func makeMainMenu() -> NSMenu {
         let mainMenu = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu(title: "Floodlight")
@@ -386,7 +390,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         appItem.submenu = appMenu
         mainMenu.addItem(appItem)
-        NSApp.mainMenu = mainMenu
+
+        let editItem = NSMenuItem()
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(
+            withTitle: "Undo",
+            action: Selector(("undo:")),
+            keyEquivalent: "z"
+        )
+        let redo = editMenu.addItem(
+            withTitle: "Redo",
+            action: Selector(("redo:")),
+            keyEquivalent: "z"
+        )
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(.separator())
+        editMenu.addItem(
+            withTitle: "Cut",
+            action: #selector(NSText.cut(_:)),
+            keyEquivalent: "x"
+        )
+        editMenu.addItem(
+            withTitle: "Copy",
+            action: #selector(NSText.copy(_:)),
+            keyEquivalent: "c"
+        )
+        editMenu.addItem(
+            withTitle: "Paste",
+            action: #selector(NSText.paste(_:)),
+            keyEquivalent: "v"
+        )
+        editMenu.addItem(
+            withTitle: "Select All",
+            action: #selector(NSText.selectAll(_:)),
+            keyEquivalent: "a"
+        )
+        editItem.submenu = editMenu
+        mainMenu.addItem(editItem)
+
+        return mainMenu
     }
 
     private func fourCharacterCode(_ value: String) -> OSType {
