@@ -13,7 +13,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/vmg-dev/fff-swift",
-            from: "0.2.0"
+            from: "0.2.1"
         )
     ],
     targets: [
