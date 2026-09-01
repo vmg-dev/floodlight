@@ -1,7 +1,6 @@
 import AppKit
 import Foundation
 import Observation
-import ServiceManagement
 
 @MainActor
 @Observable
@@ -55,6 +54,7 @@ final class SearchCoordinator {
 
     private let index: FFFIndex
     private let applicationCatalog: ApplicationCatalog
+    private let launchAtLoginController = LaunchAtLoginController()
     private let recentStore: RecentStore
     private let quickLook = QuickLookController()
     private var allResults: [SearchItem] = []
@@ -102,6 +102,7 @@ final class SearchCoordinator {
         index = FFFIndex(
             rootURL: initialRoot,
             storageURL: indexStorage,
+            enableHomeDirectoryScanning: true,
             logFilePath: environment["FLOODLIGHT_FFF_LOG"],
             logLevel: environment["FLOODLIGHT_FFF_LOG_LEVEL"] ?? "info"
         )
@@ -323,7 +324,7 @@ final class SearchCoordinator {
     }
 
     var launchesAtLogin: Bool {
-        SMAppService.mainApp.status == .enabled
+        launchAtLoginController.isEnabled
     }
 
     /// Registers the login item on the very first launch only.
@@ -333,31 +334,12 @@ final class SearchCoordinator {
     /// decision: if you later turn it off — here or in System Settings — the
     /// next launch leaves it off instead of switching it back on.
     func enableLaunchAtLoginOnFirstRun() {
-        let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: Self.launchAtLoginConfiguredKey) else { return }
-        defaults.set(true, forKey: Self.launchAtLoginConfiguredKey)
-
-        guard SMAppService.mainApp.status != .enabled else { return }
-        do {
-            try SMAppService.mainApp.register()
-        } catch {
-            NSLog(
-                "Floodlight could not enable launch at login: %@",
-                error.localizedDescription
-            )
-        }
+        launchAtLoginController.enableOnFirstRun()
     }
 
     func setLaunchAtLogin(_ enabled: Bool) throws {
-        if enabled {
-            try SMAppService.mainApp.register()
-        } else {
-            try SMAppService.mainApp.unregister()
-        }
-        UserDefaults.standard.set(true, forKey: Self.launchAtLoginConfiguredKey)
+        try launchAtLoginController.setEnabled(enabled)
     }
-
-    private static let launchAtLoginConfiguredKey = "launch-at-login-configured"
 
     private var selectedItem: SearchItem? {
         guard let selectedID else { return results.first }
