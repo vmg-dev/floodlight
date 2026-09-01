@@ -10,6 +10,7 @@ run: debug
 	./scripts/run.sh
 
 test:
+	swift test --package-path Vendor/fff-swift
 	swift test
 
 bundle: build

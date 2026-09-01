@@ -11,10 +11,7 @@ let package = Package(
         .executable(name: "Floodlight", targets: ["Floodlight"])
     ],
     dependencies: [
-        .package(
-            url: "https://github.com/vmg-dev/fff-swift",
-            from: "0.2.1"
-        )
+        .package(path: "Vendor/fff-swift")
     ],
     targets: [
         .executableTarget(
